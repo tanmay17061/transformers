@@ -97,6 +97,7 @@ from .trainer_utils import (
     TrainOutput,
     default_compute_objective,
     default_hp_space,
+    get_last_checkpoint,
     set_seed,
     speed_metrics,
 )
@@ -759,6 +760,7 @@ class Trainer:
     def train(
         self,
         resume_from_checkpoint: Optional[str] = None,
+        resume_from_last_checkpoint: Optional[bool] = None,
         trial: Union["optuna.Trial", Dict[str, Any]] = None,
         **kwargs,
     ):
@@ -768,7 +770,10 @@ class Trainer:
         Args:
             resume_from_checkpoint (:obj:`str`, `optional`):
                 Local path to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`. If
-                present, training will resume from the model/optimizer/scheduler states loaded here.
+                present, training will resume from the model/optimizer/scheduler states loaded here. Overrides any
+                effect of `resume_from_last_checkpoint`.
+            resume_from_last_checkpoint (:obj:`bool`, `optional`):
+                Resume training from last checkpoint present in directory specified by `args.output_dir`.
             trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`):
                 The trial run or the hyperparameter dictionary for hyperparameter search.
             kwargs:
@@ -803,6 +808,20 @@ class Trainer:
             self.optimizer, self.lr_scheduler = None, None
 
         # Load potential model checkpoint
+        if resume_from_checkpoint is not None and resume_from_last_checkpoint:
+            logger.warn(
+                "both resume_from_checkpoint and resume_from_last_checkpoint provided. resume_from_checkpoint will override any effect of resume_from_last_checkpoint"
+            )
+        elif resume_from_last_checkpoint and self.args.output_dir is None:
+            raise ValueError("`args.output_dir` required")
+
+        if resume_from_checkpoint is None and resume_from_last_checkpoint:
+            resume_from_checkpoint = get_last_checkpoint(self.args.output_dir)
+            if resume_from_checkpoint is None:
+                raise ValueError(f"No valid checkpoint found in output directory ({self.args.output_dir})")
+            else:
+                logger.warn(f"resume_from_checkpoint found: {resume_from_checkpoint}")
+
         if resume_from_checkpoint is not None and os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
             logger.info(f"Loading model from {resume_from_checkpoint}).")
             if isinstance(self.model, PreTrainedModel):
