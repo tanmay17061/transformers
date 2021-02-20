@@ -230,8 +230,8 @@ def speed_metrics(split, start_time, num_samples=None):
     """
     runtime = time.time() - start_time
     result = {f"{split}_runtime": round(runtime, 4)}
-    if num_samples is not None:
-        samples_per_second = 1 / (runtime / num_samples)
+    if num_samples is not None and num_samples > 0:
+        samples_per_second = 1 / (runtime / (num_samples))
         result[f"{split}_samples_per_second"] = round(samples_per_second, 3)
     return result
 

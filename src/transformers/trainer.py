@@ -327,11 +327,11 @@ class Trainer:
         if not callable(self.data_collator) and callable(getattr(self.data_collator, "collate_batch", None)):
             raise ValueError("The `data_collator` should be a simple callable (function, class with `__call__`).")
 
-        if args.max_steps > 0:
+        if args.max_steps > -1:
             logger.info("max_steps is given, it will override any value given in num_train_epochs")
 
         # Enforce rules on using datasets with no __len__
-        if train_dataset is not None and not isinstance(train_dataset, collections.abc.Sized) and args.max_steps <= 0:
+        if train_dataset is not None and not isinstance(train_dataset, collections.abc.Sized) and args.max_steps < 0:
             raise ValueError("train_dataset does not implement __len__, max_steps has to be specified")
         if eval_dataset is not None and not isinstance(eval_dataset, collections.abc.Sized):
             raise ValueError("eval_dataset must implement __len__")
@@ -831,7 +831,7 @@ class Trainer:
         if train_dataset_is_sized:
             num_update_steps_per_epoch = len(train_dataloader) // self.args.gradient_accumulation_steps
             num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)
-            if self.args.max_steps > 0:
+            if self.args.max_steps > -1:
                 max_steps = self.args.max_steps
                 num_train_epochs = self.args.max_steps // num_update_steps_per_epoch + int(
                     self.args.max_steps % num_update_steps_per_epoch > 0
