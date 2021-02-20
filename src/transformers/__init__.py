@@ -245,7 +245,7 @@ _import_structure = {
         "TrainerControl",
         "TrainerState",
     ],
-    "trainer_utils": ["EvalPrediction", "EvaluationStrategy", "SchedulerType", "set_seed"],
+    "trainer_utils": ["EvalPrediction", "TimeStrategy", "SchedulerType", "set_seed"],
     "training_args": ["TrainingArguments"],
     "training_args_seq2seq": ["Seq2SeqTrainingArguments"],
     "training_args_tf": ["TFTrainingArguments"],
@@ -1382,7 +1382,7 @@ if TYPE_CHECKING:
         TrainerControl,
         TrainerState,
     )
-    from .trainer_utils import EvalPrediction, EvaluationStrategy, SchedulerType, set_seed
+    from .trainer_utils import EvalPrediction, SchedulerType, TimeStrategy, set_seed
     from .training_args import TrainingArguments
     from .training_args_seq2seq import Seq2SeqTrainingArguments
     from .training_args_tf import TFTrainingArguments

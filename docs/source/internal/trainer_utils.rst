@@ -22,7 +22,7 @@ Utilities
 
 .. autoclass:: transformers.EvalPrediction
 
-.. autoclass:: transformers.EvaluationStrategy
+.. autoclass:: transformers.TimeStrategy
 
 .. autofunction:: transformers.set_seed
 

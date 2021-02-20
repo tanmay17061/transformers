@@ -25,7 +25,7 @@ from .file_utils import (
     is_torch_tpu_available,
     torch_required,
 )
-from .trainer_utils import EvaluationStrategy, LoggingStrategy, SchedulerType
+from .trainer_utils import SchedulerType, TimeStrategy
 from .utils import logging
 
 
@@ -84,7 +84,7 @@ class TrainingArguments:
             :class:`~transformers.Trainer`, it's intended to be used by your training/evaluation scripts instead. See
             the `example scripts <https://github.com/huggingface/transformers/tree/master/examples>`__ for more
             details.
-        evaluation_strategy (:obj:`str` or :class:`~transformers.trainer_utils.EvaluationStrategy`, `optional`, defaults to :obj:`"no"`):
+        evaluation_strategy (:obj:`str` or :class:`~transformers.trainer_utils.TimeStrategy`, `optional`, defaults to :obj:`"no"`):
             The evaluation strategy to adopt during training. Possible values are:
 
                 * :obj:`"no"`: No evaluation is done during training.
@@ -139,7 +139,7 @@ class TrainingArguments:
         logging_dir (:obj:`str`, `optional`):
             `TensorBoard <https://www.tensorflow.org/tensorboard>`__ log directory. Will default to
             `runs/**CURRENT_DATETIME_HOSTNAME**`.
-        logging_strategy (:obj:`str` or :class:`~transformers.trainer_utils.LoggingStrategy`, `optional`, defaults to :obj:`"steps"`):
+        logging_strategy (:obj:`str` or :class:`~transformers.trainer_utils.TimeStrategy`, `optional`, defaults to :obj:`"steps"`):
             The logging strategy to adopt during training. Possible values are:
 
                 * :obj:`"no"`: No logging is done during training.
@@ -150,8 +150,14 @@ class TrainingArguments:
             Whether to log and evaluate the first :obj:`global_step` or not.
         logging_steps (:obj:`int`, `optional`, defaults to 500):
             Number of update steps between two logs if :obj:`logging_strategy="steps"`.
+        save_strategy (:obj:`str` or :class:`~transformers.trainer_utils.TimeStrategy`, `optional`, defaults to :obj:`"steps"`):
+            The checkpoint save strategy to adopt during training. Possible values are:
+
+                * :obj:`"epoch"`: Save is done at the end of each epoch.
+                * :obj:`"steps"`: Save is done every :obj:`save_steps`.
+
         save_steps (:obj:`int`, `optional`, defaults to 500):
-            Number of updates steps before two checkpoint saves.
+            Number of updates steps before two checkpoint saves if :obj:`save_strategy="steps"`.
         save_total_limit (:obj:`int`, `optional`):
             If a value is passed, will limit the total amount of checkpoints. Deletes the older checkpoints in
             :obj:`output_dir`.
@@ -215,8 +221,8 @@ class TrainingArguments:
 
             .. note::
 
-                When set to :obj:`True`, the parameters :obj:`save_steps` will be ignored and the model will be saved
-                after each evaluation.
+                When set to :obj:`True`, the parameters :obj:`save_strategy` and :obj:`save_steps` will be ignored and
+                the model will be saved after each evaluation.
         metric_for_best_model (:obj:`str`, `optional`):
             Use in conjunction with :obj:`load_best_model_at_end` to specify the metric to use to compare two different
             models. Must be the name of a metric returned by the evaluation with or without the prefix :obj:`"eval_"`.
@@ -284,7 +290,7 @@ class TrainingArguments:
     do_train: bool = field(default=False, metadata={"help": "Whether to run training."})
     do_eval: bool = field(default=None, metadata={"help": "Whether to run eval on the dev set."})
     do_predict: bool = field(default=False, metadata={"help": "Whether to run predictions on the test set."})
-    evaluation_strategy: EvaluationStrategy = field(
+    evaluation_strategy: TimeStrategy = field(
         default="no",
         metadata={"help": "The evaluation strategy to use."},
     )
@@ -346,12 +352,16 @@ class TrainingArguments:
     warmup_steps: int = field(default=0, metadata={"help": "Linear warmup over warmup_steps."})
 
     logging_dir: Optional[str] = field(default_factory=default_logdir, metadata={"help": "Tensorboard log dir."})
-    logging_strategy: LoggingStrategy = field(
+    logging_strategy: TimeStrategy = field(
         default="steps",
         metadata={"help": "The logging strategy to use."},
     )
     logging_first_step: bool = field(default=False, metadata={"help": "Log the first global_step"})
     logging_steps: int = field(default=500, metadata={"help": "Log every X updates steps."})
+    save_strategy: TimeStrategy = field(
+        default="steps",
+        metadata={"help": "The checkpoint save strategy to use."},
+    )
     save_steps: int = field(default=500, metadata={"help": "Save checkpoint every X updates steps."})
     save_total_limit: Optional[int] = field(
         default=None,
@@ -492,10 +502,13 @@ class TrainingArguments:
             self.output_dir = os.getenv("SM_OUTPUT_DATA_DIR")
         if self.disable_tqdm is None:
             self.disable_tqdm = logger.getEffectiveLevel() > logging.WARN
-        self.evaluation_strategy = EvaluationStrategy(self.evaluation_strategy)
-        self.logging_strategy = LoggingStrategy(self.logging_strategy)
+
+        self.evaluation_strategy = TimeStrategy(self.evaluation_strategy)
+        self.logging_strategy = TimeStrategy(self.logging_strategy)
+        self.save_strategy = TimeStrategy(self.save_strategy)
+
         self.lr_scheduler_type = SchedulerType(self.lr_scheduler_type)
-        if self.do_eval is False and self.evaluation_strategy != EvaluationStrategy.NO:
+        if self.do_eval is False and self.evaluation_strategy != TimeStrategy.NO:
             self.do_eval = True
         if self.eval_steps is None:
             self.eval_steps = self.logging_steps
