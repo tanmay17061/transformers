@@ -2335,6 +2335,7 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
             verbose=verbose,
             **kwargs,
         )
+        print('max_length after calling _get_padding_truncation_strategies =',max_length)
 
         return self._encode_plus(
             text=text,
@@ -2430,6 +2431,10 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
             verbose=verbose,
             **kwargs,
         )
+
+        print('padding_strategy after calling _get_padding_truncation_strategies =',padding_strategy)
+        print('truncation_strategy after calling _get_padding_truncation_strategies =',truncation_strategy)
+        print('max_length after calling _get_padding_truncation_strategies =',max_length)
 
         return self._batch_encode_plus(
             batch_text_or_text_pairs=batch_text_or_text_pairs,
